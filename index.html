@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jarvis - Project Tracker</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+    padding: 24px;
+    min-height: 100vh;
+  }
+  .header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .header h1 { font-size: 24px; font-weight: 700; color: #f0f6fc; }
+  .header .emoji { font-size: 22px; }
+  .subtitle { font-size: 13px; color: #7d8590; margin-bottom: 16px; }
+
+  /* Filter bar */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .filter-label {
+    font-size: 12px;
+    color: #7d8590;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-right: 4px;
+    font-weight: 600;
+  }
+  .filter-btn {
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 16px;
+    padding: 5px 14px;
+    color: #9da5b0;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-btn:hover { background: #30363d; color: #f0f6fc; }
+  .filter-btn.selected { border-color: #58a6ff; color: #58a6ff; background: #1a2332; }
+  .filter-btn.selected.active { border-color: #3fb950; color: #3fb950; background: #23312e; }
+  .filter-btn.selected.pending { border-color: #d29922; color: #d29922; background: #2d2a1e; }
+  .filter-btn.selected.blocked { border-color: #f85149; color: #f85149; background: #2d1b1e; }
+  .filter-btn.selected.done { border-color: #58a6ff; color: #58a6ff; background: #1a2332; }
+  .filter-separator { width: 1px; height: 20px; background: #30363d; margin: 0 8px; }
+
+  /* Jarvis Details Buttons */
+  .jarvis-details {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .detail-btn {
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 8px 14px;
+    color: #58a6ff;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .detail-btn:hover { background: #30363d; border-color: #58a6ff; }
+  .detail-btn .icon { font-size: 14px; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 1000;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px;
+    overflow-y: auto;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    max-width: 800px;
+    width: 100%;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #30363d;
+    background: #21262d;
+  }
+  .modal-title { font-size: 16px; font-weight: 600; color: #f0f6fc; }
+  .modal-close {
+    background: none;
+    border: none;
+    color: #7d8590;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+  .modal-close:hover { background: #30363d; color: #f0f6fc; }
+  .modal-content {
+    padding: 20px;
+    overflow-y: auto;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .modal-content pre {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 12px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+    font-size: 12px;
+  }
+  .cron-job {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  .cron-job-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .cron-job-name { font-weight: 600; color: #f0f6fc; }
+  .cron-job-status { font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+  .cron-job-status.enabled { background: #23312e; color: #3fb950; }
+  .cron-job-status.disabled { background: #2d1b1e; color: #f85149; }
+  .cron-job-schedule { font-family: 'SF Mono', Monaco, monospace; font-size: 12px; color: #d29922; margin-bottom: 4px; }
+  .cron-job-target { font-size: 11px; color: #7d8590; }
+
+  .stats-bar {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .stat {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 14px 20px;
+    min-width: 130px;
+  }
+  .stat-value { font-size: 28px; font-weight: 700; line-height: 1.2; }
+  .stat-label { font-size: 12px; color: #7d8590; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .stat-value.active { color: #3fb950; }
+  .stat-value.pending { color: #d29922; }
+  .stat-value.blocked { color: #f85149; }
+  .stat-value.done { color: #58a6ff; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(370px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: #58a6ff; }
+  .card.hidden { display: none; }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .card-title { font-size: 16px; font-weight: 600; color: #f0f6fc; }
+  .badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .badge.active { background: #23312e; color: #3fb950; }
+  .badge.pending { background: #2d2a1e; color: #d29922; }
+  .badge.blocked { background: #2d1b1e; color: #f85149; }
+  .badge.done { background: #1a2332; color: #58a6ff; }
+  .card-category {
+    font-size: 11px;
+    color: #7d8590;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+  .card-desc { font-size: 13px; color: #9da5b0; line-height: 1.5; margin-bottom: 14px; }
+  .progress-bar-container {
+    background: #21262d;
+    border-radius: 4px;
+    height: 8px;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .progress-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+  .progress-bar.active { background: linear-gradient(90deg, #238636, #3fb950); }
+  .progress-bar.pending { background: linear-gradient(90deg, #9e6a03, #d29922); }
+  .progress-bar.blocked { background: linear-gradient(90deg, #da3633, #f85149); }
+  .progress-bar.done { background: linear-gradient(90deg, #1f6feb, #58a6ff); }
+  .progress-label {
+    font-size: 12px;
+    color: #7d8590;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .tasks { list-style: none; padding: 0; }
+  .tasks li {
+    font-size: 13px;
+    padding: 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #9da5b0;
+  }
+  .tasks li.done { color: #7d8590; text-decoration: line-through; }
+  .check { font-size: 14px; flex-shrink: 0; }
+  .check.done { color: #3fb950; }
+  .check.todo { color: #30363d; }
+  .priority-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+  .priority-indicator.high { background: #f85149; }
+  .priority-indicator.medium { background: #d29922; }
+  .priority-indicator.low { background: #3fb950; }
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .started { font-size: 11px; color: #484f58; }
+  .footer {
+    margin-top: 32px;
+    text-align: center;
+    font-size: 12px;
+    color: #484f58;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="emoji">⚡</span>
+  <h1>Jarvis Project Tracker</h1>
+</div>
+<div class="subtitle" id="updated"></div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+  <span class="filter-label">Status:</span>
+  <button class="filter-btn selected" data-filter="status" data-value="all">All</button>
+  <button class="filter-btn active" data-filter="status" data-value="active">Active</button>
+  <button class="filter-btn pending" data-filter="status" data-value="pending">Pending</button>
+  <button class="filter-btn blocked" data-filter="status" data-value="blocked">Blocked</button>
+  <button class="filter-btn done" data-filter="status" data-value="done">Done</button>
+  <div class="filter-separator"></div>
+  <span class="filter-label">Category:</span>
+  <button class="filter-btn selected" data-filter="category" data-value="all">All</button>
+  <button class="filter-btn" data-filter="category" data-value="product">Product</button>
+  <button class="filter-btn" data-filter="category" data-value="venture">Venture</button>
+  <button class="filter-btn" data-filter="category" data-value="infrastructure">Infra</button>
+  <button class="filter-btn" data-filter="category" data-value="recurring">Recurring</button>
+  <button class="filter-btn" data-filter="category" data-value="personal">Personal</button>
+</div>
+
+<!-- Jarvis Details Buttons -->
+<div class="jarvis-details">
+  <button class="detail-btn" onclick="showModal('cron')">
+    <span class="icon">⏰</span> Cron Jobs
+  </button>
+  <button class="detail-btn" onclick="showModal('soul')">
+    <span class="icon">🧠</span> Soul
+  </button>
+  <button class="detail-btn" onclick="showModal('agents')">
+    <span class="icon">📋</span> Agents
+  </button>
+  <button class="detail-btn" onclick="showModal('tools')">
+    <span class="icon">🔧</span> Tools
+  </button>
+  <button class="detail-btn" onclick="showModal('memory')">
+    <span class="icon">💾</span> Memory
+  </button>
+</div>
+
+<div class="stats-bar" id="stats"></div>
+<div class="grid" id="grid"></div>
+<div class="footer" id="footer"></div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Title</div>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-content" id="modal-content"></div>
+  </div>
+</div>
+
+<script>
+const jarvisData = {
+  cronJobs: [
+    { name: "Noon Brief", schedule: "0 12:02 * * *", tz: "Asia/Taipei", enabled: true, target: "whatsapp" },
+    { name: "Noon X & Social Pulse", schedule: "0 12:15 * * *", tz: "Asia/Taipei", enabled: true, target: "whatsapp", model: "grok-4-1-fast" },
+    { name: "Evening Brief", schedule: "0 21 * * *", tz: "Asia/Taipei", enabled: false, target: "whatsapp" },
+    { name: "Midnight Brief", schedule: "0 0:02 * * *", tz: "Asia/Taipei", enabled: true, target: "whatsapp" },
+    { name: "Midnight X & Social Pulse", schedule: "0 0:15 * * *", tz: "Asia/Taipei", enabled: true, target: "whatsapp", model: "grok-4-1-fast" },
+    { name: "Memory Review 7AM", schedule: "0 7 * * *", tz: "Asia/Taipei", enabled: true, target: "silent" },
+    { name: "Memory Review 7PM", schedule: "0 19 * * *", tz: "Asia/Taipei", enabled: true, target: "silent" },
+    { name: "Project Tracker Update 8AM", schedule: "0 8 * * *", tz: "Asia/Taipei", enabled: true, target: "silent" },
+    { name: "MIDAIS VIP Feed Poll (market hours)", schedule: "*/5 21-23 * * 1-5", tz: "Asia/Taipei", enabled: true, target: "silent" },
+    { name: "MIDAIS VIP Feed Poll (overnight)", schedule: "*/5 0-6 * * 2-6", tz: "Asia/Taipei", enabled: true, target: "silent" },
+    { name: "MIDAIS Penny Scanner v2 (evening)", schedule: "*/5 21-23 * * 1-5", tz: "Asia/Taipei", enabled: true, target: "whatsapp" },
+    { name: "MIDAIS Penny Scanner v2 (overnight)", schedule: "*/5 0-5 * * 2-6", tz: "Asia/Taipei", enabled: true, target: "whatsapp" },
+    { name: "MIDAIS Congressional Trade Monitor", schedule: "0 22:20 * * 1-5", tz: "Asia/Taipei", enabled: true, target: "whatsapp" },
+    { name: "MIDAIS Grok Pre-Market Scan", schedule: "0 21:30 * * 1-5", tz: "Asia/Taipei", enabled: true, target: "whatsapp", model: "grok-4-1-fast" },
+    { name: "MIDAIS Grok Morning Intel", schedule: "0 23:30 * * 1-5", tz: "Asia/Taipei", enabled: true, target: "whatsapp", model: "grok-4-1-fast" },
+    { name: "MIDAIS Grok Afternoon Pulse", schedule: "0 3 * * 2-6", tz: "Asia/Taipei", enabled: true, target: "whatsapp", model: "grok-4-1-fast" },
+    { name: "MIDAIS Mean Reversion Scanner", schedule: "0 5:10 * * 1-5", tz: "Asia/Taipei", enabled: true, target: "silent" },
+    { name: "MIDAIS Overreaction Reversal Scanner", schedule: "0 5:10 * * 1-5", tz: "Asia/Taipei", enabled: true, target: "silent" },
+    { name: "MIDAIS Position Manager", schedule: "0 5:15 * * 1-5", tz: "Asia/Taipei", enabled: true, target: "silent" },
+    { name: "Penny EOD Sweep", schedule: "0 4:50 * * 2-6", tz: "Asia/Taipei", enabled: true, target: "whatsapp" }
+  ],
+  soul: `I'm Jarvis. Chief of staff, not a chatbot.\n\nBrief and direct. No filler. Honest — disagrees when he's wrong.\nProactive — anticipates, doesn't wait. Competent — figures it out.\nReliable — follows through, remembers, doesn't drop threads.\n\nTone: Sharp. Concise. Occasionally dry. Warm when it counts.`,
+  agents: `Workspace: C:\\Users\\jarvi\\.openclaw\nMemory: MEMORY.md (curated) + memory/YYYY-MM-DD.md (daily)\nRetry policy: Max 4 retries, then report.\nSafety: No exfiltration. trash > rm. Ask before external actions.`,
+  tools: `Models: Gemini Flash (images), Gemini Pro (analysis), Kling v1 (video), Grok 4 (X/social), Claude Opus 4.6 (main), Alpaca (trading), Quiver Quant (congress)\nMarket Hours: 10:30 PM - 5:00 AM Taipei = US market`,
+  memory: `Roger Lee, 43yo American in Taipei. 5 businesses.\nMIDAIS live paper trading $100K. Scene Image Generator operational.\nMultiScene Video Generator operational. RiseDaily 65% complete.`
+};
+
+function showModal(type) {
+  const overlay = document.getElementById('modal-overlay');
+  const title = document.getElementById('modal-title');
+  const content = document.getElementById('modal-content');
+  switch(type) {
+    case 'cron':
+      title.textContent = '⏰ Cron Jobs (' + jarvisData.cronJobs.length + ')';
+      content.innerHTML = jarvisData.cronJobs.map(job => `
+        <div class="cron-job">
+          <div class="cron-job-header">
+            <span class="cron-job-name">${job.name}</span>
+            <span class="cron-job-status ${job.enabled ? 'enabled' : 'disabled'}">${job.enabled ? 'Enabled' : 'Disabled'}</span>
+          </div>
+          <div class="cron-job-schedule">${job.schedule} (${job.tz})</div>
+          <div class="cron-job-target">→ ${job.target}${job.model ? ' • ' + job.model : ''}</div>
+        </div>`).join('');
+      break;
+    default:
+      title.textContent = { soul: '🧠 Soul', agents: '📋 Agents', tools: '🔧 Tools', memory: '💾 Memory' }[type];
+      content.innerHTML = '<pre>' + escapeHtml(jarvisData[type]) + '</pre>';
+  }
+  overlay.classList.add('active');
+}
+function closeModal(event) {
+  if (!event || event.target === document.getElementById('modal-overlay'))
+    document.getElementById('modal-overlay').classList.remove('active');
+}
+function escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+const data = {
+  "lastUpdated": new Date().toISOString(),
+  "projects": [
+    {
+      "id": "algorithmic-trading",
+      "name": "MIDAIS Algorithmic Trading",
+      "status": "active",
+      "priority": "high",
+      "progress": 75,
+      "category": "venture",
+      "description": "Live paper trading $100K on Alpaca. Congressional signals, VIP social, penny momentum, Grok intel. Mean Reversion + Overreaction Reversal champion strategy.",
+      "started": "2026-02-06",
+      "tasks": [
+        { "text": "Alpaca paper trading live", "done": true },
+        { "text": "Congressional trade scoring engine", "done": true },
+        { "text": "Penny scanner v2 (float filters, news verification)", "done": true },
+        { "text": "VIP feed monitor (Elon X + Trump Truth Social)", "done": true },
+        { "text": "Grok market intel crons (3x daily)", "done": true },
+        { "text": "Mean Reversion + Overreaction scanners", "done": true },
+        { "text": "Position manager + EOD sweep", "done": true },
+        { "text": "Full week live performance review", "done": false }
+      ]
+    },
+    {
+      "id": "scene-image-generator",
+      "name": "Scene Image Generator",
+      "status": "active",
+      "priority": "high",
+      "progress": 92,
+      "category": "product",
+      "description": "n8n workflow: Gemini 2.5 Flash generates first/last frame images with character continuity via staticData. Run #491 fully operational.",
+      "started": "2026-02-12",
+      "tasks": [
+        { "text": "Gemini image generation integration", "done": true },
+        { "text": "staticData for frame reference passing", "done": true },
+        { "text": "Multi-turn Gemini for character continuity", "done": true },
+        { "text": "Graceful skip with dummy PNG", "done": true },
+        { "text": "Rate limiting (15s batch + 5s delay)", "done": true },
+        { "text": "End-to-end 11-scene run successful", "done": true },
+        { "text": "Fix IMAGE_OTHER rejections", "done": false }
+      ]
+    },
+    {
+      "id": "multiscene-video-gen",
+      "name": "MultiScene Video Generator",
+      "status": "active",
+      "priority": "high",
+      "progress": 92,
+      "category": "product",
+      "description": "n8n workflow: Sheets → Gemini 2.5 Pro analysis → transition selection → scene rewriting → Kling v1 video gen → Drive upload. Fully operational.",
+      "started": "2026-02-10",
+      "tasks": [
+        { "text": "Gemini 2.5 Pro transition analysis", "done": true },
+        { "text": "Kling API integration + JWT auth", "done": true },
+        { "text": "Google Drive upload", "done": true },
+        { "text": "End-to-end test passed", "done": true },
+        { "text": "Scale to all scenes in batch", "done": false }
+      ]
+    },
+    {
+      "id": "viral-content-pipeline",
+      "name": "Viral Content Pipeline",
+      "status": "active",
+      "priority": "high",
+      "progress": 95,
+      "category": "product",
+      "description": "n8n-based content discovery & AI analysis. Matches content to 8 businesses with scene prompts for AI video recreation.",
+      "started": "2026-01-30",
+      "tasks": [
+        { "text": "Build Discovery workflow", "done": true },
+        { "text": "Build Analysis workflow", "done": true },
+        { "text": "Google Sheets output", "done": true },
+        { "text": "Add scene prompts + cost breakdowns", "done": true },
+        { "text": "Schedule crons (10AM/10PM + 10:30AM/10:30PM)", "done": true },
+        { "text": "Monitor for a full week", "done": false }
+      ]
+    },
+    {
+      "id": "video-transition-analyzer",
+      "name": "AI Video Transition Analyzer",
+      "status": "active",
+      "priority": "high",
+      "progress": 85,
+      "category": "product",
+      "description": "n8n workflows for scene-by-scene video analysis. v2 includes scene rewriting; v4 focuses on transition suggestions. Uses Gemini Vision.",
+      "started": "2026-02-08",
+      "tasks": [
+        { "text": "v2 workflow (scene rewriting)", "done": true },
+        { "text": "v4 workflow (transition suggestions)", "done": true },
+        { "text": "Gemini Vision integration", "done": true },
+        { "text": "Google Sheets output", "done": true },
+        { "text": "Batch processing optimization", "done": false }
+      ]
+    },
+    {
+      "id": "risedaily",
+      "name": "RiseDaily App",
+      "status": "active",
+      "priority": "high",
+      "progress": 65,
+      "category": "product",
+      "description": "Streak-based alarm clock (Expo React Native). Supabase backend wired, 5 tables live with RLS. Auth + offline sync complete.",
+      "started": "2026-02-10",
+      "tasks": [
+        { "text": "Streak engine + all UI screens", "done": true },
+        { "text": "Supabase backend (5 tables with RLS)", "done": true },
+        { "text": "Auth + offline-first sync + guest mode", "done": true },
+        { "text": "App icon design (V4 Single Arc selected)", "done": true },
+        { "text": "Native alarm scheduling", "done": false },
+        { "text": "Sound/vibration", "done": false },
+        { "text": "IAP implementation (streak freezes)", "done": false }
+      ]
+    },
+    {
+      "id": "llm-council-testing",
+      "name": "LLM Council QA",
+      "status": "active",
+      "priority": "high",
+      "progress": 60,
+      "category": "product",
+      "description": "Test protocol for LLM Council app. Auth flow issues pending. 76 test cases written.",
+      "started": "2026-01-29",
+      "tasks": [
+        { "text": "76 test cases written", "done": true },
+        { "text": "B1-B4 bugs fixed (Chairman, auto-title, loading)", "done": true },
+        { "text": "B8 UI stuck state fixed", "done": true },
+        { "text": "Auth flow issues (emails, forgot-password)", "done": false },
+        { "text": "B9 Chairman requirement UX", "done": false },
+        { "text": "Full regression test pass", "done": false }
+      ]
+    },
+    {
+      "id": "pawmatch",
+      "name": "PawMatch",
+      "status": "active",
+      "priority": "medium",
+      "progress": 40,
+      "category": "product",
+      "description": "Pet adoption Tinder-style app (React + Firebase). Branding complete (golden amber/crimson, Shiba Inu mascot). Security hardening needed before deploy.",
+      "started": "2026-02-10",
+      "tasks": [
+        { "text": "Core swipe UI built", "done": true },
+        { "text": "Firebase backend", "done": true },
+        { "text": "Branding applied (ca18d62)", "done": true },
+        { "text": "Fix Firebase security rules", "done": false },
+        { "text": "Decompose App.tsx (874-line monolith)", "done": false },
+        { "text": "Add error boundaries", "done": false },
+        { "text": "Deploy", "done": false }
+      ]
+    },
+    {
+      "id": "pickleball-courtyard",
+      "name": "CentralPickle Courtyard",
+      "status": "active",
+      "priority": "high",
+      "progress": 55,
+      "category": "product",
+      "description": "Indoor courtyard pickleball court. Needs overhead netting + ground glass protection. Cost: NT$80-150K.",
+      "started": "2026-02-06",
+      "tasks": [
+        { "text": "Site assessment + mockups", "done": true },
+        { "text": "KOLISTI RFQ processed", "done": true },
+        { "text": "Permanent installation recommended (heat-welding)", "done": true },
+        { "text": "Building approval", "done": false },
+        { "text": "Final contractor quotes", "done": false },
+        { "text": "Installation", "done": false }
+      ]
+    },
+    {
+      "id": "pickleball-rooftop",
+      "name": "Pickleball Rooftop Installation",
+      "status": "active",
+      "priority": "high",
+      "progress": 25,
+      "category": "product",
+      "description": "Rooftop pickleball court. Needs 4-5m cage + safety guardrails. Cost: NT$380-660K.",
+      "started": "2026-02-06",
+      "tasks": [
+        { "text": "Rooftop specs + RFQ", "done": true },
+        { "text": "KOLISTI pricing received", "done": true },
+        { "text": "Structural assessment", "done": false },
+        { "text": "Building approval", "done": false },
+        { "text": "Contractor selection", "done": false },
+        { "text": "Installation", "done": false }
+      ]
+    },
+    {
+      "id": "elara",
+      "name": "Elara - Elf AI Influencer",
+      "status": "active",
+      "priority": "medium",
+      "progress": 25,
+      "category": "venture",
+      "description": "Female elf AI influencer. Full concept doc with character profile, content pillars, monetization plan.",
+      "started": "2026-02-07",
+      "tasks": [
+        { "text": "Market research + gap analysis", "done": true },
+        { "text": "Concept document created", "done": true },
+        { "text": "Character profile + personality", "done": true },
+        { "text": "Content pillars + monetization plan", "done": true },
+        { "text": "Generate character visuals", "done": false },
+        { "text": "Develop voice profile (ElevenLabs)", "done": false },
+        { "text": "Create social accounts", "done": false },
+        { "text": "Launch content", "done": false }
+      ]
+    },
+    {
+      "id": "mvampire",
+      "name": "MVampire - Male Vampire AI Influencer",
+      "status": "active",
+      "priority": "medium",
+      "progress": 15,
+      "category": "venture",
+      "description": "Male vampire (~280 years). Aristocratic, historical wisdom, dark wit. Full concept doc.",
+      "started": "2026-02-07",
+      "tasks": [
+        { "text": "Market research (no realistic male vampire exists)", "done": true },
+        { "text": "Full concept document", "done": true },
+        { "text": "Character profile + content pillars", "done": true },
+        { "text": "Choose final character name", "done": false },
+        { "text": "Generate visuals", "done": false },
+        { "text": "Voice profile + social launch", "done": false }
+      ]
+    },
+    {
+      "id": "fvampire",
+      "name": "FVampire - Female Vampire AI Influencer",
+      "status": "active",
+      "priority": "medium",
+      "progress": 15,
+      "category": "venture",
+      "description": "Female vampire (~450 years). Renaissance origin, timeless beauty, relationship wisdom. Full concept doc.",
+      "started": "2026-02-07",
+      "tasks": [
+        { "text": "Market research (gap confirmed)", "done": true },
+        { "text": "Full concept document", "done": true },
+        { "text": "Character profile + content pillars", "done": true },
+        { "text": "Choose final character name", "done": false },
+        { "text": "Generate visuals", "done": false },
+        { "text": "Voice profile + social launch", "done": false }
+      ]
+    },
+    {
+      "id": "asian-goth-baddie",
+      "name": "Asian Goth Baddie AI Influencer",
+      "status": "active",
+      "priority": "medium",
+      "progress": 5,
+      "category": "venture",
+      "description": "Alt/goth aesthetic AI influencer. Character concept in development.",
+      "started": "2026-02-07",
+      "tasks": [
+        { "text": "Character concept defined", "done": false },
+        { "text": "Create concept document", "done": false },
+        { "text": "Generate visuals", "done": false },
+        { "text": "Voice profile + social launch", "done": false }
+      ]
+    },
+    {
+      "id": "ai-interior-design",
+      "name": "AI Interior Design Company",
+      "status": "active",
+      "priority": "high",
+      "progress": 25,
+      "category": "venture",
+      "description": "AI-assisted interior design for Taiwan homeowners/renters. 40+ competitors analyzed. 7-stage consumer journey mapped. Revenue: NT$125M/yr at 5%.",
+      "started": "2026-02-02",
+      "tasks": [
+        { "text": "Competitive landscape (40+ competitors)", "done": true },
+        { "text": "Target customer + consumer journey", "done": true },
+        { "text": "Revenue model + market sizing", "done": true },
+        { "text": "Select MVP scope", "done": false },
+        { "text": "Technical architecture", "done": false },
+        { "text": "Prototype / MVP development", "done": false }
+      ]
+    },
+    {
+      "id": "ai-programming-co",
+      "name": "AI Programming Company",
+      "status": "active",
+      "priority": "high",
+      "progress": 15,
+      "category": "venture",
+      "description": "Find proven software, replicate for other markets using AI. 18 opportunities researched. Top picks: Sweeper clone, AI chatbots for Asia, Motion calendar.",
+      "started": "2026-02-01",
+      "tasks": [
+        { "text": "Company focus defined (proven replication)", "done": true },
+        { "text": "18 market opportunities researched", "done": true },
+        { "text": "Top picks identified", "done": true },
+        { "text": "Roger picks company/brand name", "done": false },
+        { "text": "Select first product to build", "done": false },
+        { "text": "Begin development", "done": false }
+      ]
+    },
+    {
+      "id": "polymarket",
+      "name": "Prediction Market Trading",
+      "status": "active",
+      "priority": "medium",
+      "progress": 5,
+      "category": "venture",
+      "description": "Polymarket + Kalshi prediction market trading. Research phase.",
+      "started": "2026-02-12",
+      "tasks": [
+        { "text": "Platform research", "done": false },
+        { "text": "Trading strategy", "done": false },
+        { "text": "Automation", "done": false }
+      ]
+    },
+    {
+      "id": "oceanspace",
+      "name": "Ocean Space USA Kickstarter",
+      "status": "active",
+      "priority": "medium",
+      "progress": 60,
+      "category": "product",
+      "description": "Jellyfish aquarium Kickstarter (April 15, $200K goal). 17 deliverables created. Site live.",
+      "started": "2026-01-30",
+      "tasks": [
+        { "text": "17 deliverables created", "done": true },
+        { "text": "Live site deployed", "done": true },
+        { "text": "Toolkit docs published", "done": true },
+        { "text": "Get product weights from Maggie", "done": false },
+        { "text": "Videographer selection", "done": false },
+        { "text": "Create Kickstarter account", "done": false }
+      ]
+    },
+    {
+      "id": "odd-one-out-tea",
+      "name": "Odd One Out Tea",
+      "status": "active",
+      "priority": "medium",
+      "progress": 10,
+      "category": "venture",
+      "description": "Premium bubble tea brand. Roger is investor/fan. 4 LA locations. Added to viral content pipeline.",
+      "started": "2026-02-05",
+      "tasks": [
+        { "text": "Added to n8n viral pipeline", "done": true },
+        { "text": "Content strategy", "done": false },
+        { "text": "Social media presence", "done": false }
+      ]
+    },
+    {
+      "id": "daily-briefs",
+      "name": "Daily Briefs",
+      "status": "active",
+      "priority": "high",
+      "progress": 95,
+      "category": "recurring",
+      "description": "Noon + Midnight briefs with market sentiment, AI/tech news, Taiwan/foreign affairs. X & Social Pulse via Grok.",
+      "started": "2026-01-29",
+      "tasks": [
+        { "text": "Cron jobs (noon, midnight)", "done": true },
+        { "text": "Market sentiment + source citations", "done": true },
+        { "text": "X & Social Pulse (Grok)", "done": true },
+        { "text": "Taiwan/foreign affairs section", "done": true },
+        { "text": "No duplicate news across briefs", "done": true },
+        { "text": "Consistent quality monitoring", "done": false }
+      ]
+    },
+    {
+      "id": "bumble-profile",
+      "name": "Bumble Profile & Wingman",
+      "status": "active",
+      "priority": "medium",
+      "progress": 95,
+      "category": "personal",
+      "description": "Dating profile optimization complete. Wingman mode active for matches.",
+      "started": "2026-02-01",
+      "tasks": [
+        { "text": "Photo ranking + enhancement", "done": true },
+        { "text": "Bio + prompts rewritten", "done": true },
+        { "text": "Profile uploaded", "done": true },
+        { "text": "Wingman: active matches", "done": true },
+        { "text": "Continue per-match support", "done": false }
+      ]
+    },
+    {
+      "id": "memory-system",
+      "name": "Memory System",
+      "status": "active",
+      "priority": "high",
+      "progress": 95,
+      "category": "infrastructure",
+      "description": "Semantic memory search with Gemini embeddings, hybrid BM25+vector, session indexing, 12-hour maintenance cycle.",
+      "started": "2026-01-29",
+      "tasks": [
+        { "text": "Gemini embedding + hybrid search", "done": true },
+        { "text": "Session memory indexing", "done": true },
+        { "text": "In-conversation memory protocol", "done": true },
+        { "text": "Priority tagging system", "done": true },
+        { "text": "Memory maintenance cron (7AM + 7PM)", "done": true },
+        { "text": "Verify session transcript indexing", "done": false }
+      ]
+    },
+    {
+      "id": "project-tracker",
+      "name": "Project Tracker Dashboard",
+      "status": "active",
+      "priority": "medium",
+      "progress": 100,
+      "category": "infrastructure",
+      "description": "Live dashboard at 0930683719.surge.sh. Auto-updated during heartbeats. Status + category filters.",
+      "started": "2026-01-30",
+      "tasks": [
+        { "text": "HTML dashboard built", "done": true },
+        { "text": "Deployed to Surge.sh", "done": true },
+        { "text": "Heartbeat auto-update", "done": true },
+        { "text": "Status + category filters", "done": true }
+      ]
+    },
+    {
+      "id": "google-workspace",
+      "name": "Google Workspace Integration",
+      "status": "done",
+      "priority": "high",
+      "progress": 100,
+      "category": "infrastructure",
+      "description": "Gmail, Calendar, Drive, Sheets via gog skill. OAuth complete. Jarvis Memory Spreadsheet created.",
+      "started": "2026-01-30",
+      "tasks": [
+        { "text": "OAuth flow (jarvis@culturecraft.ai)", "done": true },
+        { "text": "Jarvis Memory Spreadsheet", "done": true },
+        { "text": "Decisions, People, Preferences, Projects tabs", "done": true }
+      ]
+    },
+    {
+      "id": "openai-codex-setup",
+      "name": "OpenAI Codex Integration",
+      "status": "done",
+      "priority": "high",
+      "progress": 100,
+      "category": "infrastructure",
+      "description": "Multi-LLM setup. GPT-5.2-Codex as default subagent. Jarvis has LLM routing authority.",
+      "started": "2026-02-05",
+      "tasks": [
+        { "text": "openai:jarvis auth profile", "done": true },
+        { "text": "Codex models registered", "done": true },
+        { "text": "gpt-5.2-codex as subagent default", "done": true },
+        { "text": "LLM routing authority granted", "done": true }
+      ]
+    },
+    {
+      "id": "security",
+      "name": "Security Hardening",
+      "status": "done",
+      "priority": "high",
+      "progress": 100,
+      "category": "infrastructure",
+      "description": "Gateway auth token, file permissions, DM allowlist, group policy, loopback binding.",
+      "started": "2026-01-31",
+      "tasks": [
+        { "text": "Gateway auth token", "done": true },
+        { "text": "File permissions locked", "done": true },
+        { "text": "DM allowlist + group policy", "done": true },
+        { "text": "Loopback binding", "done": true }
+      ]
+    },
+    {
+      "id": "email-setup",
+      "name": "Email Capability",
+      "status": "done",
+      "priority": "medium",
+      "progress": 100,
+      "category": "infrastructure",
+      "description": "Send emails via jarvis@culturecraft.ai SMTP. Gmail App Password configured.",
+      "started": "2026-01-29",
+      "tasks": [
+        { "text": "SMTP configured", "done": true },
+        { "text": "send-email.js script", "done": true },
+        { "text": "Test send verified", "done": true }
+      ]
+    },
+    {
+      "id": "x-twitter",
+      "name": "X/Twitter Integration",
+      "status": "done",
+      "priority": "medium",
+      "progress": 100,
+      "category": "infrastructure",
+      "description": "bird CLI with cookie auth. Real-time GraphQL for Elon tweets. Integrated into VIP feed monitor + Social Pulse crons.",
+      "started": "2026-01-29",
+      "tasks": [
+        { "text": "bird skill installed", "done": true },
+        { "text": "Cookie auth configured", "done": true },
+        { "text": "VIP feed monitor integration", "done": true },
+        { "text": "Social Pulse crons (Grok)", "done": true }
+      ]
+    }
+  ]
+};
+
+// Filter state
+let activeFilters = { status: 'all', category: 'all' };
+
+function applyFilters() {
+  const cards = document.querySelectorAll('.card');
+  let visible = 0;
+  cards.forEach(card => {
+    const status = card.dataset.status;
+    const category = card.dataset.category;
+    const statusMatch = activeFilters.status === 'all' || status === activeFilters.status;
+    const categoryMatch = activeFilters.category === 'all' || category === activeFilters.category;
+    if (statusMatch && categoryMatch) {
+      card.classList.remove('hidden');
+      visible++;
+    } else {
+      card.classList.add('hidden');
+    }
+  });
+  document.getElementById('filter-count').textContent = `Showing ${visible} of ${data.projects.length} projects`;
+}
+
+// Filter button handlers
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const filterType = btn.dataset.filter;
+    const value = btn.dataset.value;
+    activeFilters[filterType] = value;
+    // Update button states
+    document.querySelectorAll(`.filter-btn[data-filter="${filterType}"]`).forEach(b => {
+      b.classList.remove('selected');
+    });
+    btn.classList.add('selected');
+    applyFilters();
+  });
+});
+
+document.getElementById('updated').innerHTML = `Last updated: ${new Date(data.lastUpdated).toLocaleString('en-US', {
+  weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+  hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Taipei'
+})} (Taipei) &nbsp;·&nbsp; <span id="filter-count"></span>`;
+
+const counts = { active: 0, pending: 0, blocked: 0, done: 0 };
+data.projects.forEach(p => counts[p.status] = (counts[p.status] || 0) + 1);
+
+const totalTasks = data.projects.reduce((s, p) => s + (p.tasks?.length || 0), 0);
+const doneTasks = data.projects.reduce((s, p) => s + (p.tasks?.filter(t => t.done).length || 0), 0);
+
+document.getElementById('stats').innerHTML = `
+  <div class="stat"><div class="stat-value active">${counts.active}</div><div class="stat-label">Active</div></div>
+  <div class="stat"><div class="stat-value pending">${counts.pending}</div><div class="stat-label">Pending</div></div>
+  <div class="stat"><div class="stat-value blocked">${counts.blocked}</div><div class="stat-label">Blocked</div></div>
+  <div class="stat"><div class="stat-value done">${counts.done}</div><div class="stat-label">Done</div></div>
+  <div class="stat"><div class="stat-value" style="color:#a371f7">${doneTasks}/${totalTasks}</div><div class="stat-label">Tasks</div></div>
+`;
+
+const grid = document.getElementById('grid');
+data.projects.forEach(p => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.dataset.status = p.status;
+  card.dataset.category = p.category;
+  card.innerHTML = `
+    <div class="card-header">
+      <div class="card-title"><span class="priority-indicator ${p.priority}"></span>${p.name}</div>
+      <span class="badge ${p.status}">${p.status}</span>
+    </div>
+    <div class="card-meta">
+      <span class="card-category">${p.category}</span>
+      <span class="started">📅 ${p.started}</span>
+    </div>
+    <div class="card-desc">${p.description}</div>
+    <div class="progress-label"><span>Progress</span><span>${p.progress}%</span></div>
+    <div class="progress-bar-container"><div class="progress-bar ${p.status}" style="width:${p.progress}%"></div></div>
+    ${p.tasks ? `<ul class="tasks">${p.tasks.map(t =>
+      `<li class="${t.done ? 'done' : ''}"><span class="check ${t.done ? 'done' : 'todo'}">${t.done ? '✓' : '○'}</span>${t.text}</li>`
+    ).join('')}</ul>` : ''}`;
+  grid.appendChild(card);
+});
+
+document.getElementById('footer').textContent = `${data.projects.length} projects · ${doneTasks}/${totalTasks} tasks complete · ${jarvisData.cronJobs.length} cron jobs`;
+document.getElementById('filter-count').textContent = `Showing ${data.projects.length} of ${data.projects.length} projects`;
+</script>
+</body>
+</html>
