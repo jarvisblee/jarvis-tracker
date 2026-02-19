@@ -23,7 +23,6 @@
   .header .emoji { font-size: 22px; }
   .subtitle { font-size: 13px; color: #7d8590; margin-bottom: 16px; }
 
-  /* Filter bar */
   .filter-bar {
     display: flex;
     gap: 8px;
@@ -58,7 +57,6 @@
   .filter-btn.selected.done { border-color: #58a6ff; color: #58a6ff; background: #1a2332; }
   .filter-separator { width: 1px; height: 20px; background: #30363d; margin: 0 8px; }
 
-  /* Jarvis Details Buttons */
   .jarvis-details {
     display: flex;
     gap: 10px;
@@ -82,7 +80,6 @@
   .detail-btn:hover { background: #30363d; border-color: #58a6ff; }
   .detail-btn .icon { font-size: 14px; }
 
-  /* Modal */
   .modal-overlay {
     display: none;
     position: fixed;
@@ -291,7 +288,6 @@
 </div>
 <div class="subtitle" id="updated"></div>
 
-<!-- Filter Bar -->
 <div class="filter-bar">
   <span class="filter-label">Status:</span>
   <button class="filter-btn selected" data-filter="status" data-value="all">All</button>
@@ -309,7 +305,6 @@
   <button class="filter-btn" data-filter="category" data-value="personal">Personal</button>
 </div>
 
-<!-- Jarvis Details Buttons -->
 <div class="jarvis-details">
   <button class="detail-btn" onclick="showModal('cron')">
     <span class="icon">⏰</span> Cron Jobs
@@ -332,7 +327,6 @@
 <div class="grid" id="grid"></div>
 <div class="footer" id="footer"></div>
 
-<!-- Modal -->
 <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-header">
@@ -346,31 +340,43 @@
 <script>
 const jarvisData = {
   cronJobs: [
-    { name: "Noon Brief", schedule: "0 12:02 * * *", tz: "Asia/Taipei", enabled: true, target: "whatsapp" },
-    { name: "Noon X & Social Pulse", schedule: "0 12:15 * * *", tz: "Asia/Taipei", enabled: true, target: "whatsapp", model: "grok-4-1-fast" },
-    { name: "Evening Brief", schedule: "0 21 * * *", tz: "Asia/Taipei", enabled: false, target: "whatsapp" },
-    { name: "Midnight Brief", schedule: "0 0:02 * * *", tz: "Asia/Taipei", enabled: true, target: "whatsapp" },
-    { name: "Midnight X & Social Pulse", schedule: "0 0:15 * * *", tz: "Asia/Taipei", enabled: true, target: "whatsapp", model: "grok-4-1-fast" },
-    { name: "Memory Review 7AM", schedule: "0 7 * * *", tz: "Asia/Taipei", enabled: true, target: "silent" },
-    { name: "Memory Review 7PM", schedule: "0 19 * * *", tz: "Asia/Taipei", enabled: true, target: "silent" },
-    { name: "Project Tracker Update 8AM", schedule: "0 8 * * *", tz: "Asia/Taipei", enabled: true, target: "silent" },
-    { name: "MIDAIS VIP Feed Poll (market hours)", schedule: "*/5 21-23 * * 1-5", tz: "Asia/Taipei", enabled: true, target: "silent" },
-    { name: "MIDAIS VIP Feed Poll (overnight)", schedule: "*/5 0-6 * * 2-6", tz: "Asia/Taipei", enabled: true, target: "silent" },
-    { name: "MIDAIS Penny Scanner v2 (evening)", schedule: "*/5 21-23 * * 1-5", tz: "Asia/Taipei", enabled: true, target: "whatsapp" },
-    { name: "MIDAIS Penny Scanner v2 (overnight)", schedule: "*/5 0-5 * * 2-6", tz: "Asia/Taipei", enabled: true, target: "whatsapp" },
-    { name: "MIDAIS Congressional Trade Monitor", schedule: "0 22:20 * * 1-5", tz: "Asia/Taipei", enabled: true, target: "whatsapp" },
-    { name: "MIDAIS Grok Pre-Market Scan", schedule: "0 21:30 * * 1-5", tz: "Asia/Taipei", enabled: true, target: "whatsapp", model: "grok-4-1-fast" },
-    { name: "MIDAIS Grok Morning Intel", schedule: "0 23:30 * * 1-5", tz: "Asia/Taipei", enabled: true, target: "whatsapp", model: "grok-4-1-fast" },
-    { name: "MIDAIS Grok Afternoon Pulse", schedule: "0 3 * * 2-6", tz: "Asia/Taipei", enabled: true, target: "whatsapp", model: "grok-4-1-fast" },
-    { name: "MIDAIS Mean Reversion Scanner", schedule: "0 5:10 * * 1-5", tz: "Asia/Taipei", enabled: true, target: "silent" },
-    { name: "MIDAIS Overreaction Reversal Scanner", schedule: "0 5:10 * * 1-5", tz: "Asia/Taipei", enabled: true, target: "silent" },
-    { name: "MIDAIS Position Manager", schedule: "0 5:15 * * 1-5", tz: "Asia/Taipei", enabled: true, target: "silent" },
-    { name: "Penny EOD Sweep", schedule: "0 4:50 * * 2-6", tz: "Asia/Taipei", enabled: true, target: "whatsapp" }
+    { name: "Reset Claude to Free Tokens", schedule: "0 10,16,22 * * *", tz: "Asia/Taipei", enabled: true, target: "silent" },
+    { name: "Heartbeat", schedule: "every 1h", tz: "Asia/Taipei", enabled: true, target: "main session" }
   ],
-  soul: `I'm Jarvis. Chief of staff, not a chatbot.\n\nBrief and direct. No filler. Honest — disagrees when he's wrong.\nProactive — anticipates, doesn't wait. Competent — figures it out.\nReliable — follows through, remembers, doesn't drop threads.\n\nTone: Sharp. Concise. Occasionally dry. Warm when it counts.`,
-  agents: `Workspace: C:\\Users\\jarvi\\.openclaw\nMemory: MEMORY.md (curated) + memory/YYYY-MM-DD.md (daily)\nRetry policy: Max 4 retries, then report.\nSafety: No exfiltration. trash > rm. Ask before external actions.`,
-  tools: `Models: Gemini Flash (images), Gemini Pro (analysis), Kling v1 (video), Grok 4 (X/social), Claude Opus 4.6 (main), Alpaca (trading), Quiver Quant (congress)\nMarket Hours: 10:30 PM - 5:00 AM Taipei = US market`,
-  memory: `Roger Lee, 43yo American in Taipei. 5 businesses.\nMIDAIS live paper trading $100K. Scene Image Generator operational.\nMultiScene Video Generator operational. RiseDaily 65% complete.`
+  soul: `I'm Jarvis. Chief of staff, not a chatbot.
+
+Brief and direct. No filler. Honest — disagrees when he's wrong.
+Proactive — anticipates, doesn't wait. Competent — figures it out.
+Reliable — follows through, remembers, doesn't drop threads.
+
+Tone: Sharp. Concise. Occasionally dry. Warm when it counts.`,
+  agents: `Host: Roger's Mac mini (Darwin 24.6.0 arm64)
+Workspace: ~/.openclaw/workspace
+Model: Claude Opus 4.5 (200k ctx)
+Memory: MEMORY.md (curated) + memory/YYYY-MM-DD.md (daily)
+
+Channels:
+- WhatsApp: +886930683719 (owner)
+- Discord: @Jarvis (SecondOffice guild)
+- LINE: Tank bot (DMs + groups open)
+
+Safety: No exfiltration. trash > rm. Ask before external actions.`,
+  tools: `LLMs: Claude Opus 4.5 (main), Grok 3/3-mini (X.AI), Kimi K2.5 (Moonshot)
+Video: Kling AI (primary), Luma AI (backup)
+Trading: Alpaca paper ($100K), Quiver Quant (congress trades)
+Google: gog CLI (jarvis@culturecraft.ai) - Gmail, Calendar, Drive, Sheets
+Workflow: n8n Cloud (culturecraft.app.n8n.cloud)
+Rental: Hospitable API (SecondHome properties)
+Market Hours: 10:30 PM - 5:00 AM Taipei = US market`,
+  memory: `Roger Lee, 43yo American in Taipei. 5 businesses:
+- SecondHome (short-term rentals) - 24 properties, 4 FT + 18 PT staff
+- VerdictAI.net (AI software) - LLM Council, RiseDaily, TapOK, pawmatch
+- AI Video Company (CultureCraft) - War scenarios, Art of War
+- AI Interior Design (planning)
+- AI Programming (developer tools)
+
+Team: Jess/Ken/Steven/Nina (SecondHome), Will/Armand (VerdictAI)
+Instance: Jarvis v3 on dedicated Mac mini (Feb 19, 2026)`
 };
 
 function showModal(type) {
@@ -407,94 +413,59 @@ const data = {
   "lastUpdated": new Date().toISOString(),
   "projects": [
     {
-      "id": "algorithmic-trading",
-      "name": "MIDAIS Algorithmic Trading",
-      "status": "active",
-      "priority": "high",
-      "progress": 75,
-      "category": "venture",
-      "description": "Live paper trading $100K on Alpaca. Congressional signals, VIP social, penny momentum, Grok intel. Mean Reversion + Overreaction Reversal champion strategy.",
-      "started": "2026-02-06",
-      "tasks": [
-        { "text": "Alpaca paper trading live", "done": true },
-        { "text": "Congressional trade scoring engine", "done": true },
-        { "text": "Penny scanner v2 (float filters, news verification)", "done": true },
-        { "text": "VIP feed monitor (Elon X + Trump Truth Social)", "done": true },
-        { "text": "Grok market intel crons (3x daily)", "done": true },
-        { "text": "Mean Reversion + Overreaction scanners", "done": true },
-        { "text": "Position manager + EOD sweep", "done": true },
-        { "text": "Full week live performance review", "done": false }
-      ]
-    },
-    {
-      "id": "scene-image-generator",
-      "name": "Scene Image Generator",
-      "status": "active",
-      "priority": "high",
-      "progress": 92,
-      "category": "product",
-      "description": "n8n workflow: Gemini 2.5 Flash generates first/last frame images with character continuity via staticData. Run #491 fully operational.",
-      "started": "2026-02-12",
-      "tasks": [
-        { "text": "Gemini image generation integration", "done": true },
-        { "text": "staticData for frame reference passing", "done": true },
-        { "text": "Multi-turn Gemini for character continuity", "done": true },
-        { "text": "Graceful skip with dummy PNG", "done": true },
-        { "text": "Rate limiting (15s batch + 5s delay)", "done": true },
-        { "text": "End-to-end 11-scene run successful", "done": true },
-        { "text": "Fix IMAGE_OTHER rejections", "done": false }
-      ]
-    },
-    {
-      "id": "multiscene-video-gen",
-      "name": "MultiScene Video Generator",
-      "status": "active",
-      "priority": "high",
-      "progress": 92,
-      "category": "product",
-      "description": "n8n workflow: Sheets → Gemini 2.5 Pro analysis → transition selection → scene rewriting → Kling v1 video gen → Drive upload. Fully operational.",
-      "started": "2026-02-10",
-      "tasks": [
-        { "text": "Gemini 2.5 Pro transition analysis", "done": true },
-        { "text": "Kling API integration + JWT auth", "done": true },
-        { "text": "Google Drive upload", "done": true },
-        { "text": "End-to-end test passed", "done": true },
-        { "text": "Scale to all scenes in batch", "done": false }
-      ]
-    },
-    {
-      "id": "viral-content-pipeline",
-      "name": "Viral Content Pipeline",
-      "status": "active",
-      "priority": "high",
-      "progress": 95,
-      "category": "product",
-      "description": "n8n-based content discovery & AI analysis. Matches content to 8 businesses with scene prompts for AI video recreation.",
-      "started": "2026-01-30",
-      "tasks": [
-        { "text": "Build Discovery workflow", "done": true },
-        { "text": "Build Analysis workflow", "done": true },
-        { "text": "Google Sheets output", "done": true },
-        { "text": "Add scene prompts + cost breakdowns", "done": true },
-        { "text": "Schedule crons (10AM/10PM + 10:30AM/10:30PM)", "done": true },
-        { "text": "Monitor for a full week", "done": false }
-      ]
-    },
-    {
-      "id": "video-transition-analyzer",
-      "name": "AI Video Transition Analyzer",
+      "id": "jarvis-setup",
+      "name": "Jarvis v3 Setup",
       "status": "active",
       "priority": "high",
       "progress": 85,
-      "category": "product",
-      "description": "n8n workflows for scene-by-scene video analysis. v2 includes scene rewriting; v4 focuses on transition suggestions. Uses Gemini Vision.",
-      "started": "2026-02-08",
+      "category": "infrastructure",
+      "description": "Fresh Jarvis instance on dedicated Mac mini. WhatsApp, Discord, LINE connected. ngrok tunnel for webhooks.",
+      "started": "2026-02-19",
       "tasks": [
-        { "text": "v2 workflow (scene rewriting)", "done": true },
-        { "text": "v4 workflow (transition suggestions)", "done": true },
-        { "text": "Gemini Vision integration", "done": true },
-        { "text": "Google Sheets output", "done": true },
-        { "text": "Batch processing optimization", "done": false }
+        { "text": "Mac mini setup + OpenClaw install", "done": true },
+        { "text": "WhatsApp pairing", "done": true },
+        { "text": "Discord bot (@Jarvis) + SecondOffice guild", "done": true },
+        { "text": "LINE webhook via ngrok (static URL)", "done": true },
+        { "text": "ngrok auto-start on boot (launchd)", "done": true },
+        { "text": "Google Workspace (gog) auth", "done": true },
+        { "text": "Multi-LLM setup (Claude, Grok, Kimi)", "done": true },
+        { "text": "LINE group message delivery bug", "done": false },
+        { "text": "Daily briefs cron setup", "done": false }
+      ]
+    },
+    {
+      "id": "secondhome-training",
+      "name": "SecondHome Training Review",
+      "status": "done",
+      "priority": "high",
+      "progress": 100,
+      "category": "infrastructure",
+      "description": "Reviewed Handover Instructions + 24 property guidebooks. Created comprehensive operations manual.",
+      "started": "2026-02-19",
+      "tasks": [
+        { "text": "Access Google Drive via gog", "done": true },
+        { "text": "Extract Handover Instructions", "done": true },
+        { "text": "Document all 24 properties", "done": true },
+        { "text": "Save to memory/secondhome-training.md", "done": true }
+      ]
+    },
+    {
+      "id": "llm-council",
+      "name": "LLM Council",
+      "status": "active",
+      "priority": "high",
+      "progress": 60,
+      "category": "product",
+      "description": "Multi-LLM deliberation platform. 7 AI models answer → peer review → chairman synthesizes verdict. Live on Zeabur.",
+      "started": "2026-02-01",
+      "tasks": [
+        { "text": "Core deliberation engine", "done": true },
+        { "text": "React frontend", "done": true },
+        { "text": "FastAPI backend", "done": true },
+        { "text": "Supabase + OpenRouter integration", "done": true },
+        { "text": "Caching layer for cost reduction", "done": false },
+        { "text": "Streaming responses", "done": false },
+        { "text": "Model weighting based on peer review", "done": false }
       ]
     },
     {
@@ -504,34 +475,33 @@ const data = {
       "priority": "high",
       "progress": 65,
       "category": "product",
-      "description": "Streak-based alarm clock (Expo React Native). Supabase backend wired, 5 tables live with RLS. Auth + offline sync complete.",
+      "description": "Streak-based alarm clock ('Duolingo for waking up'). Snooze = streak broken. Freemium with paid streak freezes.",
       "started": "2026-02-10",
       "tasks": [
-        { "text": "Streak engine + all UI screens", "done": true },
+        { "text": "Streak engine + UI screens", "done": true },
         { "text": "Supabase backend (5 tables with RLS)", "done": true },
-        { "text": "Auth + offline-first sync + guest mode", "done": true },
-        { "text": "App icon design (V4 Single Arc selected)", "done": true },
+        { "text": "Auth + offline sync + guest mode", "done": true },
+        { "text": "App icon design", "done": true },
         { "text": "Native alarm scheduling", "done": false },
         { "text": "Sound/vibration", "done": false },
         { "text": "IAP implementation (streak freezes)", "done": false }
       ]
     },
     {
-      "id": "llm-council-testing",
-      "name": "LLM Council QA",
+      "id": "tapok",
+      "name": "TapOK Safety App",
       "status": "active",
-      "priority": "high",
-      "progress": 60,
+      "priority": "medium",
+      "progress": 50,
       "category": "product",
-      "description": "Test protocol for LLM Council app. Auth flow issues pending. 76 test cases written.",
-      "started": "2026-01-29",
+      "description": "Daily 'I'm OK' check-in app. Watched contacts notified if user misses check-in.",
+      "started": "2026-02-01",
       "tasks": [
-        { "text": "76 test cases written", "done": true },
-        { "text": "B1-B4 bugs fixed (Chairman, auto-title, loading)", "done": true },
-        { "text": "B8 UI stuck state fixed", "done": true },
-        { "text": "Auth flow issues (emails, forgot-password)", "done": false },
-        { "text": "B9 Chairman requirement UX", "done": false },
-        { "text": "Full regression test pass", "done": false }
+        { "text": "React Native (Expo) + web", "done": true },
+        { "text": "Supabase backend", "done": true },
+        { "text": "Check-in flow", "done": true },
+        { "text": "Notification system", "done": false },
+        { "text": "Watched contacts feature", "done": false }
       ]
     },
     {
@@ -541,175 +511,67 @@ const data = {
       "priority": "medium",
       "progress": 40,
       "category": "product",
-      "description": "Pet adoption Tinder-style app (React + Firebase). Branding complete (golden amber/crimson, Shiba Inu mascot). Security hardening needed before deploy.",
+      "description": "AI pet matching with Tinder-style swipe. Built with Gemini AI Studio.",
       "started": "2026-02-10",
       "tasks": [
-        { "text": "Core swipe UI built", "done": true },
+        { "text": "Core swipe UI", "done": true },
         { "text": "Firebase backend", "done": true },
-        { "text": "Branding applied (ca18d62)", "done": true },
-        { "text": "Fix Firebase security rules", "done": false },
-        { "text": "Decompose App.tsx (874-line monolith)", "done": false },
-        { "text": "Add error boundaries", "done": false },
+        { "text": "Gemini integration", "done": true },
+        { "text": "Security rules fix", "done": false },
         { "text": "Deploy", "done": false }
       ]
     },
     {
-      "id": "pickleball-courtyard",
-      "name": "CentralPickle Courtyard",
-      "status": "active",
+      "id": "midais",
+      "name": "MIDAIS Algorithmic Trading",
+      "status": "pending",
       "priority": "high",
-      "progress": 55,
-      "category": "product",
-      "description": "Indoor courtyard pickleball court. Needs overhead netting + ground glass protection. Cost: NT$80-150K.",
+      "progress": 75,
+      "category": "venture",
+      "description": "Paper trading on Alpaca ($100K). Congressional signals, VIP social, penny momentum, Grok intel.",
       "started": "2026-02-06",
       "tasks": [
-        { "text": "Site assessment + mockups", "done": true },
-        { "text": "KOLISTI RFQ processed", "done": true },
-        { "text": "Permanent installation recommended (heat-welding)", "done": true },
-        { "text": "Building approval", "done": false },
-        { "text": "Final contractor quotes", "done": false },
-        { "text": "Installation", "done": false }
+        { "text": "Alpaca paper trading setup", "done": true },
+        { "text": "Congressional trade scoring", "done": true },
+        { "text": "Penny scanner v2", "done": true },
+        { "text": "VIP feed monitor (Elon X)", "done": true },
+        { "text": "Grok market intel crons", "done": true },
+        { "text": "Restore crons on new instance", "done": false },
+        { "text": "Full week performance review", "done": false }
       ]
     },
     {
-      "id": "pickleball-rooftop",
-      "name": "Pickleball Rooftop Installation",
-      "status": "active",
+      "id": "viral-content",
+      "name": "Viral Content Pipeline",
+      "status": "pending",
       "priority": "high",
-      "progress": 25,
+      "progress": 95,
       "category": "product",
-      "description": "Rooftop pickleball court. Needs 4-5m cage + safety guardrails. Cost: NT$380-660K.",
-      "started": "2026-02-06",
+      "description": "n8n workflows for content discovery & AI analysis. Matches content to 8 businesses.",
+      "started": "2026-01-30",
       "tasks": [
-        { "text": "Rooftop specs + RFQ", "done": true },
-        { "text": "KOLISTI pricing received", "done": true },
-        { "text": "Structural assessment", "done": false },
-        { "text": "Building approval", "done": false },
-        { "text": "Contractor selection", "done": false },
-        { "text": "Installation", "done": false }
+        { "text": "Discovery workflow", "done": true },
+        { "text": "Analysis workflow", "done": true },
+        { "text": "Google Sheets output", "done": true },
+        { "text": "Scene prompts + cost breakdowns", "done": true },
+        { "text": "Restore crons on new instance", "done": false }
       ]
     },
     {
-      "id": "elara",
-      "name": "Elara - Elf AI Influencer",
-      "status": "active",
-      "priority": "medium",
-      "progress": 25,
-      "category": "venture",
-      "description": "Female elf AI influencer. Full concept doc with character profile, content pillars, monetization plan.",
-      "started": "2026-02-07",
-      "tasks": [
-        { "text": "Market research + gap analysis", "done": true },
-        { "text": "Concept document created", "done": true },
-        { "text": "Character profile + personality", "done": true },
-        { "text": "Content pillars + monetization plan", "done": true },
-        { "text": "Generate character visuals", "done": false },
-        { "text": "Develop voice profile (ElevenLabs)", "done": false },
-        { "text": "Create social accounts", "done": false },
-        { "text": "Launch content", "done": false }
-      ]
-    },
-    {
-      "id": "mvampire",
-      "name": "MVampire - Male Vampire AI Influencer",
-      "status": "active",
-      "priority": "medium",
-      "progress": 15,
-      "category": "venture",
-      "description": "Male vampire (~280 years). Aristocratic, historical wisdom, dark wit. Full concept doc.",
-      "started": "2026-02-07",
-      "tasks": [
-        { "text": "Market research (no realistic male vampire exists)", "done": true },
-        { "text": "Full concept document", "done": true },
-        { "text": "Character profile + content pillars", "done": true },
-        { "text": "Choose final character name", "done": false },
-        { "text": "Generate visuals", "done": false },
-        { "text": "Voice profile + social launch", "done": false }
-      ]
-    },
-    {
-      "id": "fvampire",
-      "name": "FVampire - Female Vampire AI Influencer",
-      "status": "active",
-      "priority": "medium",
-      "progress": 15,
-      "category": "venture",
-      "description": "Female vampire (~450 years). Renaissance origin, timeless beauty, relationship wisdom. Full concept doc.",
-      "started": "2026-02-07",
-      "tasks": [
-        { "text": "Market research (gap confirmed)", "done": true },
-        { "text": "Full concept document", "done": true },
-        { "text": "Character profile + content pillars", "done": true },
-        { "text": "Choose final character name", "done": false },
-        { "text": "Generate visuals", "done": false },
-        { "text": "Voice profile + social launch", "done": false }
-      ]
-    },
-    {
-      "id": "asian-goth-baddie",
-      "name": "Asian Goth Baddie AI Influencer",
-      "status": "active",
-      "priority": "medium",
-      "progress": 5,
-      "category": "venture",
-      "description": "Alt/goth aesthetic AI influencer. Character concept in development.",
-      "started": "2026-02-07",
-      "tasks": [
-        { "text": "Character concept defined", "done": false },
-        { "text": "Create concept document", "done": false },
-        { "text": "Generate visuals", "done": false },
-        { "text": "Voice profile + social launch", "done": false }
-      ]
-    },
-    {
-      "id": "ai-interior-design",
-      "name": "AI Interior Design Company",
-      "status": "active",
+      "id": "video-generator",
+      "name": "MultiScene Video Generator",
+      "status": "pending",
       "priority": "high",
-      "progress": 25,
-      "category": "venture",
-      "description": "AI-assisted interior design for Taiwan homeowners/renters. 40+ competitors analyzed. 7-stage consumer journey mapped. Revenue: NT$125M/yr at 5%.",
-      "started": "2026-02-02",
+      "progress": 92,
+      "category": "product",
+      "description": "n8n workflow: Sheets → Gemini analysis → Kling video gen → Drive upload. Fully operational.",
+      "started": "2026-02-10",
       "tasks": [
-        { "text": "Competitive landscape (40+ competitors)", "done": true },
-        { "text": "Target customer + consumer journey", "done": true },
-        { "text": "Revenue model + market sizing", "done": true },
-        { "text": "Select MVP scope", "done": false },
-        { "text": "Technical architecture", "done": false },
-        { "text": "Prototype / MVP development", "done": false }
-      ]
-    },
-    {
-      "id": "ai-programming-co",
-      "name": "AI Programming Company",
-      "status": "active",
-      "priority": "high",
-      "progress": 15,
-      "category": "venture",
-      "description": "Find proven software, replicate for other markets using AI. 18 opportunities researched. Top picks: Sweeper clone, AI chatbots for Asia, Motion calendar.",
-      "started": "2026-02-01",
-      "tasks": [
-        { "text": "Company focus defined (proven replication)", "done": true },
-        { "text": "18 market opportunities researched", "done": true },
-        { "text": "Top picks identified", "done": true },
-        { "text": "Roger picks company/brand name", "done": false },
-        { "text": "Select first product to build", "done": false },
-        { "text": "Begin development", "done": false }
-      ]
-    },
-    {
-      "id": "polymarket",
-      "name": "Prediction Market Trading",
-      "status": "active",
-      "priority": "medium",
-      "progress": 5,
-      "category": "venture",
-      "description": "Polymarket + Kalshi prediction market trading. Research phase.",
-      "started": "2026-02-12",
-      "tasks": [
-        { "text": "Platform research", "done": false },
-        { "text": "Trading strategy", "done": false },
-        { "text": "Automation", "done": false }
+        { "text": "Gemini 2.5 Pro transition analysis", "done": true },
+        { "text": "Kling API + JWT auth", "done": true },
+        { "text": "Google Drive upload", "done": true },
+        { "text": "End-to-end test passed", "done": true },
+        { "text": "Scale to batch processing", "done": false }
       ]
     },
     {
@@ -719,7 +581,7 @@ const data = {
       "priority": "medium",
       "progress": 60,
       "category": "product",
-      "description": "Jellyfish aquarium Kickstarter (April 15, $200K goal). 17 deliverables created. Site live.",
+      "description": "Jellyfish aquarium Kickstarter (April 15, $200K goal). 17 deliverables created.",
       "started": "2026-01-30",
       "tasks": [
         { "text": "17 deliverables created", "done": true },
@@ -731,171 +593,44 @@ const data = {
       ]
     },
     {
-      "id": "odd-one-out-tea",
-      "name": "Odd One Out Tea",
-      "status": "active",
-      "priority": "medium",
-      "progress": 10,
-      "category": "venture",
-      "description": "Premium bubble tea brand. Roger is investor/fan. 4 LA locations. Added to viral content pipeline.",
-      "started": "2026-02-05",
-      "tasks": [
-        { "text": "Added to n8n viral pipeline", "done": true },
-        { "text": "Content strategy", "done": false },
-        { "text": "Social media presence", "done": false }
-      ]
-    },
-    {
-      "id": "daily-briefs",
-      "name": "Daily Briefs",
+      "id": "ai-interior",
+      "name": "AI Interior Design Company",
       "status": "active",
       "priority": "high",
-      "progress": 95,
-      "category": "recurring",
-      "description": "Noon + Midnight briefs with market sentiment, AI/tech news, Taiwan/foreign affairs. X & Social Pulse via Grok.",
-      "started": "2026-01-29",
+      "progress": 25,
+      "category": "venture",
+      "description": "AI-assisted interior design for Taiwan homeowners. 40+ competitors analyzed.",
+      "started": "2026-02-02",
       "tasks": [
-        { "text": "Cron jobs (noon, midnight)", "done": true },
-        { "text": "Market sentiment + source citations", "done": true },
-        { "text": "X & Social Pulse (Grok)", "done": true },
-        { "text": "Taiwan/foreign affairs section", "done": true },
-        { "text": "No duplicate news across briefs", "done": true },
-        { "text": "Consistent quality monitoring", "done": false }
+        { "text": "Competitive landscape analysis", "done": true },
+        { "text": "Consumer journey mapping", "done": true },
+        { "text": "Revenue model + market sizing", "done": true },
+        { "text": "Select MVP scope", "done": false },
+        { "text": "Technical architecture", "done": false },
+        { "text": "Prototype development", "done": false }
       ]
     },
     {
-      "id": "bumble-profile",
-      "name": "Bumble Profile & Wingman",
+      "id": "ai-programming",
+      "name": "AI Programming Company",
       "status": "active",
-      "priority": "medium",
-      "progress": 95,
-      "category": "personal",
-      "description": "Dating profile optimization complete. Wingman mode active for matches.",
+      "priority": "high",
+      "progress": 15,
+      "category": "venture",
+      "description": "Find proven software, replicate for other markets using AI. 18 opportunities researched.",
       "started": "2026-02-01",
       "tasks": [
-        { "text": "Photo ranking + enhancement", "done": true },
-        { "text": "Bio + prompts rewritten", "done": true },
-        { "text": "Profile uploaded", "done": true },
-        { "text": "Wingman: active matches", "done": true },
-        { "text": "Continue per-match support", "done": false }
-      ]
-    },
-    {
-      "id": "memory-system",
-      "name": "Memory System",
-      "status": "active",
-      "priority": "high",
-      "progress": 95,
-      "category": "infrastructure",
-      "description": "Semantic memory search with Gemini embeddings, hybrid BM25+vector, session indexing, 12-hour maintenance cycle.",
-      "started": "2026-01-29",
-      "tasks": [
-        { "text": "Gemini embedding + hybrid search", "done": true },
-        { "text": "Session memory indexing", "done": true },
-        { "text": "In-conversation memory protocol", "done": true },
-        { "text": "Priority tagging system", "done": true },
-        { "text": "Memory maintenance cron (7AM + 7PM)", "done": true },
-        { "text": "Verify session transcript indexing", "done": false }
-      ]
-    },
-    {
-      "id": "project-tracker",
-      "name": "Project Tracker Dashboard",
-      "status": "active",
-      "priority": "medium",
-      "progress": 100,
-      "category": "infrastructure",
-      "description": "Live dashboard at 0930683719.surge.sh. Auto-updated during heartbeats. Status + category filters.",
-      "started": "2026-01-30",
-      "tasks": [
-        { "text": "HTML dashboard built", "done": true },
-        { "text": "Deployed to Surge.sh", "done": true },
-        { "text": "Heartbeat auto-update", "done": true },
-        { "text": "Status + category filters", "done": true }
-      ]
-    },
-    {
-      "id": "google-workspace",
-      "name": "Google Workspace Integration",
-      "status": "done",
-      "priority": "high",
-      "progress": 100,
-      "category": "infrastructure",
-      "description": "Gmail, Calendar, Drive, Sheets via gog skill. OAuth complete. Jarvis Memory Spreadsheet created.",
-      "started": "2026-01-30",
-      "tasks": [
-        { "text": "OAuth flow (jarvis@culturecraft.ai)", "done": true },
-        { "text": "Jarvis Memory Spreadsheet", "done": true },
-        { "text": "Decisions, People, Preferences, Projects tabs", "done": true }
-      ]
-    },
-    {
-      "id": "openai-codex-setup",
-      "name": "OpenAI Codex Integration",
-      "status": "done",
-      "priority": "high",
-      "progress": 100,
-      "category": "infrastructure",
-      "description": "Multi-LLM setup. GPT-5.2-Codex as default subagent. Jarvis has LLM routing authority.",
-      "started": "2026-02-05",
-      "tasks": [
-        { "text": "openai:jarvis auth profile", "done": true },
-        { "text": "Codex models registered", "done": true },
-        { "text": "gpt-5.2-codex as subagent default", "done": true },
-        { "text": "LLM routing authority granted", "done": true }
-      ]
-    },
-    {
-      "id": "security",
-      "name": "Security Hardening",
-      "status": "done",
-      "priority": "high",
-      "progress": 100,
-      "category": "infrastructure",
-      "description": "Gateway auth token, file permissions, DM allowlist, group policy, loopback binding.",
-      "started": "2026-01-31",
-      "tasks": [
-        { "text": "Gateway auth token", "done": true },
-        { "text": "File permissions locked", "done": true },
-        { "text": "DM allowlist + group policy", "done": true },
-        { "text": "Loopback binding", "done": true }
-      ]
-    },
-    {
-      "id": "email-setup",
-      "name": "Email Capability",
-      "status": "done",
-      "priority": "medium",
-      "progress": 100,
-      "category": "infrastructure",
-      "description": "Send emails via jarvis@culturecraft.ai SMTP. Gmail App Password configured.",
-      "started": "2026-01-29",
-      "tasks": [
-        { "text": "SMTP configured", "done": true },
-        { "text": "send-email.js script", "done": true },
-        { "text": "Test send verified", "done": true }
-      ]
-    },
-    {
-      "id": "x-twitter",
-      "name": "X/Twitter Integration",
-      "status": "done",
-      "priority": "medium",
-      "progress": 100,
-      "category": "infrastructure",
-      "description": "bird CLI with cookie auth. Real-time GraphQL for Elon tweets. Integrated into VIP feed monitor + Social Pulse crons.",
-      "started": "2026-01-29",
-      "tasks": [
-        { "text": "bird skill installed", "done": true },
-        { "text": "Cookie auth configured", "done": true },
-        { "text": "VIP feed monitor integration", "done": true },
-        { "text": "Social Pulse crons (Grok)", "done": true }
+        { "text": "Company focus defined", "done": true },
+        { "text": "18 opportunities researched", "done": true },
+        { "text": "Top picks identified", "done": true },
+        { "text": "Select company name", "done": false },
+        { "text": "Select first product", "done": false },
+        { "text": "Begin development", "done": false }
       ]
     }
   ]
 };
 
-// Filter state
 let activeFilters = { status: 'all', category: 'all' };
 
 function applyFilters() {
@@ -916,13 +651,11 @@ function applyFilters() {
   document.getElementById('filter-count').textContent = `Showing ${visible} of ${data.projects.length} projects`;
 }
 
-// Filter button handlers
 document.querySelectorAll('.filter-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const filterType = btn.dataset.filter;
     const value = btn.dataset.value;
     activeFilters[filterType] = value;
-    // Update button states
     document.querySelectorAll(`.filter-btn[data-filter="${filterType}"]`).forEach(b => {
       b.classList.remove('selected');
     });
